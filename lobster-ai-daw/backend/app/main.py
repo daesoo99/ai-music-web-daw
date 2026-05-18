@@ -4,6 +4,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.config import settings
+from app.services.acestep_client import ACEStepClient
+from app.services.block_orchestrator import BlockOrchestrator
+
+# Initialize the services
+acestep_client = ACEStepClient(base_url=settings.ACESTEP_API_URL)
+block_orchestrator = BlockOrchestrator(client=acestep_client, base_data_dir=settings.DATA_DIR)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -11,13 +17,20 @@ async def lifespan(app: FastAPI):
     os.makedirs(settings.PROJECTS_DIR, exist_ok=True)
     os.makedirs(settings.STEMS_DIR, exist_ok=True)
     os.makedirs(settings.EXPORTS_DIR, exist_ok=True)
+    os.makedirs(os.path.join(settings.DATA_DIR, "projects"), exist_ok=True)
     
     # Touch .gitkeep files to keep folder templates tracked in git
     for directory in [settings.PROJECTS_DIR, settings.STEMS_DIR, settings.EXPORTS_DIR]:
         with open(os.path.join(directory, ".gitkeep"), "a") as f:
             pass
             
+    # Start service clients
+    acestep_client.start()
+    
     yield
+    
+    # Close service clients on shutdown
+    await acestep_client.close()
 
 app = FastAPI(
     title="Lobster AI DAW FastAPI Wrapper",
@@ -25,6 +38,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Store singletons on app state for route access
+app.state.acestep_client = acestep_client
+app.state.block_orchestrator = block_orchestrator
 
 # CORS configuration for development
 app.add_middleware(
