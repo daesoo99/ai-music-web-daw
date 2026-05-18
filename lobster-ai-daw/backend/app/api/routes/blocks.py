@@ -40,13 +40,15 @@ async def run_sequence_composition_task(
             block_id = spec["block_id"]
             prompt = spec["prompt"]
             duration = spec["duration"]
+            track_id = spec.get("track_id", "default-track")
             
-            logger.info(f"[BgTask] Job {job_id}: Starting block {idx+1}/{total_blocks} (ID: {block_id})")
+            logger.info(f"[BgTask] Job {job_id}: Starting block {idx+1}/{total_blocks} (ID: {block_id}, Track: {track_id})")
             await broker.publish(job_id, {
                 "type": "block_started",
                 "job_id": job_id,
                 "block_index": idx,
-                "block_id": block_id
+                "block_id": block_id,
+                "track_id": track_id
             })
             
             # Progress callback for this block
@@ -72,6 +74,7 @@ async def run_sequence_composition_task(
                 keyscale=keyscale,
                 previous_block_id=previous_block_id,
                 ref_audio_strength=ref_audio_strength,
+                track_id=track_id,
                 progress_callback=on_block_progress
             )
             
@@ -139,7 +142,8 @@ async def compose_sequence(
         processed_specs.append({
             "block_id": str(uuid.uuid4()),
             "prompt": spec.prompt,
-            "duration": spec.duration_seconds
+            "duration": spec.duration_seconds,
+            "track_id": spec.track_id
         })
         
     # Register job state as pending

@@ -6,6 +6,7 @@ class BlockSpec(BaseModel):
     duration_seconds: float = Field(default=30.0, alias="duration")
     bpm: int = 120
     keyscale: str = "C Major"
+    track_id: str = "default-track"
     
     class Config:
         populate_by_name = True

@@ -33,6 +33,7 @@ class BlockOrchestrator:
         keyscale: str = "C Major",
         previous_block_id: Optional[str] = None,
         ref_audio_strength: float = 0.6,
+        track_id: str = "default-track",
         progress_callback: Optional[Callable[[float], Any]] = None
     ) -> Dict[str, Any]:
         """Generate a single music block.
@@ -60,7 +61,7 @@ class BlockOrchestrator:
             
         # Continuation mode using previous block's audio tail
         if tail_path and os.path.exists(tail_path):
-            logger.info(f"[Orchestrator] Continuation requested. Using tail: {tail_path}")
+            logger.info(f"[Orchestrator] Continuation requested on track '{track_id}'. Using tail: {tail_path}")
             
             # Using repaint task to continue seamlessly
             payload["task_type"] = "repaint"
@@ -86,7 +87,7 @@ class BlockOrchestrator:
             payload["audio_duration"] = duration
 
         # 1. Run actual AI rendering via Port 8001
-        logger.info(f"[Orchestrator] Dispatching generation job for block {block_id}...")
+        logger.info(f"[Orchestrator] Dispatching generation job on track '{track_id}' for block {block_id}...")
         await self.client.compose(payload, dest_path, progress_callback)
         logger.info(f"[Orchestrator] Successfully generated block {block_id} at {dest_path}")
 
@@ -111,6 +112,7 @@ class BlockOrchestrator:
         return {
             "block_id": block_id,
             "project_id": project_id,
+            "track_id": track_id,
             "prompt": prompt,
             "duration": duration,
             "bpm": bpm,
@@ -142,6 +144,7 @@ class BlockOrchestrator:
             block_id = spec.get("block_id")
             prompt = spec.get("prompt")
             duration = spec.get("duration", 30.0)
+            track_id = spec.get("track_id", "default-track")
 
             # Custom block progress wrapper
             def block_prog(percent: float):
@@ -160,6 +163,7 @@ class BlockOrchestrator:
                 bpm=bpm,
                 keyscale=keyscale,
                 previous_block_id=previous_block_id,
+                track_id=track_id,
                 progress_callback=block_prog
             )
             results.append(res)

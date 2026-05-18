@@ -7,3 +7,4 @@ class RepaintRequest(BaseModel):
     end_seconds: float
     new_prompt: str
     project_id: Optional[str] = "default-project"
+    track_id: str = "default-track"

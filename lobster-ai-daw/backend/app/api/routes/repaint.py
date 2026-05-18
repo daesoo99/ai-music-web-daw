@@ -108,6 +108,7 @@ async def run_repaint_composition_task(
         block_meta = {
             "block_id": new_block_id,
             "project_id": project_id,
+            "track_id": req.track_id,
             "prompt": req.new_prompt,
             "duration": source_block_meta["duration"],
             "bpm": source_block_meta["bpm"],
