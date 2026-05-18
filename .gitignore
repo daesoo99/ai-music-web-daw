@@ -1,0 +1,35 @@
+# Virtual environments
+.venv/
+ACE-Step-1.5/.venv/
+
+# Model Checkpoints (Extremely large, >20GB)
+ACE-Step-1.5/checkpoints/
+ACE-Step-1.5/.cache/
+
+# Temporary and audio cache files
+ACE-Step-1.5/.cache/acestep/tmp/
+*.mp3
+*.wav
+*.mid
+
+# OpenClaw runtime states
+.openclaw/
+
+# Skill and reference packages
+claude-ai-music-skills-main/
+midi-agent-skill-main/
+music-composition-main/
+*.zip
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
