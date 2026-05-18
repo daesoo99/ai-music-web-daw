@@ -6,10 +6,14 @@ from contextlib import asynccontextmanager
 from app.config import settings
 from app.services.acestep_client import ACEStepClient
 from app.services.block_orchestrator import BlockOrchestrator
+from app.services.progress_broker import ProgressBroker
+from app.services.state_store import StateStore
 
 # Initialize the services
 acestep_client = ACEStepClient(base_url=settings.ACESTEP_API_URL)
 block_orchestrator = BlockOrchestrator(client=acestep_client, base_data_dir=settings.DATA_DIR)
+progress_broker = ProgressBroker()
+state_store = StateStore()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -42,6 +46,8 @@ app = FastAPI(
 # Store singletons on app state for route access
 app.state.acestep_client = acestep_client
 app.state.block_orchestrator = block_orchestrator
+app.state.progress_broker = progress_broker
+app.state.state_store = state_store
 
 # CORS configuration for development
 app.add_middleware(
