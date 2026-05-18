@@ -171,9 +171,12 @@ async def compose_sequence(
 @router.get("/")
 async def list_blocks(
     project_id: Optional[str] = None,
+    track_id: Optional[str] = None,
     state_store: StateStore = Depends(get_state_store)
 ):
-    """Retrieve metadata of all generated blocks, optionally filtered by project_id."""
+    """Retrieve metadata of all generated blocks, optionally filtered by project_id and track_id."""
+    if project_id and track_id:
+        return await state_store.get_project_track_blocks(project_id, track_id)
     if project_id:
         return await state_store.get_project_blocks(project_id)
     return await state_store.get_all_blocks()

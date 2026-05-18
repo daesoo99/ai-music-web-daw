@@ -39,3 +39,11 @@ class StateStore:
         """List all blocks belonging to a specific project."""
         async with self.lock:
             return [b for b in self.blocks.values() if b.get("project_id") == project_id]
+
+    async def get_project_track_blocks(self, project_id: str, track_id: str) -> List[Dict[str, Any]]:
+        """List all blocks belonging to a specific track in a project."""
+        async with self.lock:
+            return [
+                b for b in self.blocks.values()
+                if b.get("project_id") == project_id and b.get("track_id") == track_id
+            ]
