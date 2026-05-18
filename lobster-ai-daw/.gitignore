@@ -1,0 +1,33 @@
+# Node dependencies
+frontend/node_modules/
+frontend/dist/
+
+# Python dependencies
+backend/__pycache__/
+backend/.venv/
+backend/.pytest_cache/
+
+# Runtime data (Do not commit user creations)
+backend/data/projects/*
+backend/data/stems/*
+backend/data/exports/*
+!backend/data/projects/.gitkeep
+!backend/data/stems/.gitkeep
+!backend/data/exports/.gitkeep
+
+# Environment files
+.env
+backend/.env
+
+# Audio cache and outputs
+*.mp3
+*.wav
+*.mid
+*.zip
+
+# OS and IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo

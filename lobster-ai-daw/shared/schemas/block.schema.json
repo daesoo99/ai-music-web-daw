@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AudioBlock",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "trackId": { "type": "string" },
+    "name": { "type": "string" },
+    "prompt": { "type": "string" },
+    "bpm": { "type": "number" },
+    "duration": { "type": "number" },
+    "startOffset": { "type": "number" },
+    "audioUrl": { "type": "string" }
+  },
+  "required": ["id", "trackId", "prompt", "duration"]
+}

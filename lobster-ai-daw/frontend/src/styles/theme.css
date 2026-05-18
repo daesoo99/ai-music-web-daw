@@ -1,0 +1,12 @@
+:root {
+  --bg-dark: #090a0f;
+  --bg-panel: rgba(18, 20, 32, 0.6);
+  --primary-royal: #3f5efb;
+  --primary-royal-glow: rgba(63, 94, 251, 0.4);
+  --secondary-coral: #fc466b;
+  --secondary-coral-glow: rgba(252, 70, 107, 0.4);
+  --text-primary: #f1f2f6;
+  --text-secondary: #a4b0be;
+  --border-light: rgba(255, 255, 255, 0.08);
+  --green-online: #2ed573;
+}
