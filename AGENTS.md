@@ -216,3 +216,13 @@ This is a starting point. Add your own conventions, style, and rules as you figu
 ## Related
 
 - [Default AGENTS.md](/reference/AGENTS.default)
+
+## CSS 작성 룰
+- 색·여백·폰트 사이즈·폰트 weight·border-radius 하드코딩 금지
+- 모든 값은 `globals.css`의 `:root`에 정의된 CSS 변수만 참조
+- 새 토큰 필요 시 globals.css 먼저 정의 후 사용
+- 인라인 스타일(`style={{...}}`)에서도 동일 규칙 적용 가능 시 CSS 클래스로 분리
+
+## 브랜딩 문자열 룰
+- 앱 이름·버전·태그라인은 `constants/branding.ts`에서 import만 사용
+- 컴포넌트·HTML·메타태그에 직접 문자열 박지 말 것

@@ -1,80 +1,148 @@
-# 🦞 Lobster AI Music Web DAW - 마스터 아키텍처 청사진 (Pivoted Multi-Track DAW Blueprint)
+# 🦞 Lobster AI Music Web DAW - 마스터 아키텍처 청사진 (v2.0)
 
-이 문서는 **Lobster AI Music Web DAW** 프로젝트의 핵심 아키텍처와 폴더 구조를 정의한 **마스터 청사진**입니다. 
-기존의 단일 트랙 시간 연장 방식을 뛰어넘어, 사용자가 정의한 **세로축 악기 트랙(Y)과 가로축 시간 블록(X)이 결합된 진정한 '멀티 트랙 하이브리드 DAW'**를 구현하기 위한 마스터 가이드라인입니다. 나중에 **GPT Pro**, **Claude** 등 타 대형 AI 에이전트와 아키텍처를 비교 분석하거나 피드백을 받아 코드를 갱신할 때 이 파일을 컨텍스트로 제공하세요.
+이 문서는 **Lobster AI Music Web DAW** 프로젝트의 핵심 아키텍처를 정의한 **마스터 청사진**입니다.
+GPT Pro, Claude 등 외부 AI 에이전트에게 작업을 맡길 때 이 파일을 컨텍스트로 제공하세요.
 
----
-
-## 🛠️ 1. 핵심 아키텍처 결정 사항 (Core Architectural Decisions)
-
-### 결정 1. 멀티 트랙 2차원 그리드 (Y축 악기 트랙 × X축 시간 블록)
-* **구조**:
-  - **Y축 (세로)**: 개별 악기 트랙 리스트 (예: Grand Piano, Finger Bass, Strings, Synthesizer 등). 각 트랙은 고유한 `track_id`를 가집니다.
-  - **X축 (가로)**: 30초 단위 시간 그리드 블록.
-  - **블록 데이터 구조**: 각 블록(`block_meta`)은 자신이 속한 악기 트랙의 식별자인 `track_id`를 명시하며, 동일 트랙 내의 이전 블록 꼬리(`previous_block_id`)를 물고 릴레이 작곡(Chaining)을 실행합니다.
-
-### 결정 2. 이중 연주 엔진 (Dual-Engine Playback & Rendering)
-1. **실시간 프리뷰 엔진 (지연율 0ms 브라우저 가상 연주)**:
-   - **기술**: 브라우저 Web Audio API + 초경량 SoundFont (SF2).
-   - **역할**: 마우스로 찍은 계이름(MIDI)이나 가사를 지연시간 없이 즉시 소리 내어 줍니다. 볼륨 조절, Mute(음소거), Solo 연주가 실시간으로 가볍게 가동됩니다.
-2. **AI 스튜디오 렌더링 엔진 (Port 8001)**:
-   - **기술**: `ACE-Step 1.5 XL DiT` AI 엔진.
-   - **역할**: 사용자가 조율한 계이름 정보와 프롬프트를 취합해 영화 음악 급의 초고해상도 개별 MP3 Stem 음원으로 최종 렌더링합니다.
-
-### 결정 3. 미들웨어: FastAPI Wrapper (Port 8002) 배치
-* **역할**:
-  1. **Natively Multi-Track Chaining**: 각 악기 트랙별로 독립적으로 오디오 꼬리(Tail)를 잘라내어 해당 트랙의 다음 마디로 자연스럽게 이식하는 비동기 작곡 오케스트레이션 수행.
-  2. **WebSocket 실시간 중계**: 무거운 AI 생성 진행률(Progress)을 브라우저에 WebSocket으로 쏴주어 화면에 네온 프로그레스 바 작동.
-  3. **프로젝트 영속화**: DAW 프로젝트 세션(트랙 리스트, Mute/Solo 상태, 볼륨값, 세그먼트 블록 배치)을 JSON 파일 데이터베이스로 영속화.
-
-### 결정 4. 포트 바인딩 정책
-* **Port 8001**: `ACE-Step XL DiT AI Engine` (기존 로컬 백엔드)
-* **Port 8002**: `FastAPI Wrapper Backend` (오케스트레이션 백엔)
-* **Port 5173**: `Vite + React + TS Frontend` (DAW 사용자 UI)
+**최종 업데이트: 2026-05-19**
 
 ---
 
-## 📂 2. 마스터 디렉토리 구조 (Directory Structure)
+## 🛠️ 1. 포트 바인딩 정책
+| 포트 | 역할 |
+|------|------|
+| 8003 | ACE-Step AI Engine (GPU, 음악 생성) |
+| 8002 | FastAPI Wrapper Backend (오케스트레이션) |
+| 5173 | Vite + React + TS Frontend (DAW UI) |
+| 11434 | Ollama (AI 도슨트용 gemma2:4b) |
+
+---
+
+## 🏗️ 2. 핵심 아키텍처 결정 (확정)
+
+### 결정 1: 멀티 트랙 2D 그리드
+- **Y축**: 악기 트랙 (piano, strings, drums, bass 등, 각각 고유 `track_id`)
+- **X축**: 시간 블록 (가변 길이, `timelineStartSeconds` + `durationSeconds`)
+- 블록은 `previous_block_id`로 체이닝 → 자연스러운 이어지는 작곡 (Relayed Composition)
+
+### 결정 2: MIDI 데이터 저장 전략 (B안 채택)
+- `useNotesStore` **분리 + Lazy-load + LRU-20** — 메인 프로젝트 스토어에 음표 넣지 않음
+- 블록 더블클릭 시 `GET /api/blocks/:id/midi` 호출 → 캐시에 저장
+- 드럼 트랙은 Basic Pitch 정확도가 낮아 `status: "unavailable"` graceful degradation
+
+### 결정 3: 악기 스왑 파이프라인
+```
+블록 드래그→드롭 → SwapConfirmModal (프롬프트 입력)
+→ POST /api/blocks/swap-instrument
+→ Basic Pitch transcription (.mid 파일) — CPU, GPU 락과 무관
+→ FluidSynth MIDI→WAV (reference audio)
+→ ACE-Step audio2audio (repaint_strength=0.45, 멜로디 윤곽 보존)
+→ 새 블록 생성 (원본 블록 유지, A/B 비교 가능)
+```
+
+### 결정 4: AI 도슨트 스트리밍
+```
+블록 클릭 → PianoRollModal → "이 음악 분석하기" 버튼
+→ POST /api/blocks/analyze
+→ analyst.py (block_meta + MIDI 통계 → Ollama prompt)
+→ NDJSON 스트림 → AnalysisPanel 실시간 표시
+```
+
+### 결정 5: 백그라운드 작업 관리
+- **GPU 작업**: `asyncio.Semaphore(1)` — ACE-Step 동시 실행 1개 제한 (8GB VRAM 보호)
+- **CPU 전사 작업**: `asyncio.Semaphore(2)` — Basic Pitch 최대 2개 병렬
+- `task_registry.py`의 `spawn_job()` — 모든 백그라운드 작업 등록/추적
+
+---
+
+## 📂 3. 현재 디렉토리 구조
 
 ```
 lobster-ai-daw/
-├── .gitignore
-├── README.md
-│
-├── shared/                # 프론트/백 공용 JSON 스키마
-│   └── schemas/
-│       ├── block.schema.json
-│       └── project.schema.json
-│
-├── backend/               # FastAPI 래퍼 (포트 8002)
+├── docs/architecture_blueprint.md   ← 이 파일
+├── backend/
 │   ├── app/
-│   │   ├── main.py        # CORS, 라우터 등록 및 lifespan
-│   │   ├── config.py      # BaseSettings 환경 설정
-│   │   ├── api/
-│   │   │   └── routes/    # 엔드포인트 라우터 (health, blocks, projects, audio, repaint, ws)
-│   │   ├── services/      # 핵심 로직 (acestep_client, block_orchestrator 등)
-│   │   ├── models/        # Pydantic 데이터 검증 모델 (BlockSpec 내 track_id 포함)
-│   │   ├── core/          # CP949 로깅 및 인코딩 패치
-│   │   └── utils/         # 오디오/Latent/파일 헬퍼 (6초 꼬리 추출 등)
-│   ├── data/              # 로컬 데이터베이스 (JSON 프로젝트, 악기별 오디오 스템 캐시)
-│   ├── pyproject.toml
-│   └── requirements.txt
+│   │   ├── main.py                  (lifespan, 라우터 등록, Basic Pitch 워밍업)
+│   │   ├── api/routes/
+│   │   │   ├── blocks.py            (POST /sequence, transcription spawn_job)
+│   │   │   ├── midi.py              (GET /blocks/:id/midi, POST /analyze, POST /swap-instrument)
+│   │   │   ├── repaint.py
+│   │   │   ├── ws.py
+│   │   │   └── audio.py
+│   │   ├── models/
+│   │   │   └── midi.py              (Note, BlockMidi, AnalyzeRequest, SwapInstrumentRequest)
+│   │   └── services/
+│   │       ├── block_orchestrator.py (generate_block, dispatch_transcription, swap_instrument)
+│   │       ├── midi_transcriber.py   (Basic Pitch 래핑, Krumhansl key detection)
+│   │       ├── midi_synth.py         (FluidSynth CLI → WAV)
+│   │       ├── analyst.py            (Ollama Gemma 스트리밍 도슨트)
+│   │       ├── progress_broker.py    (WebSocket fan-out, ⚠️ publish_global 미구현)
+│   │       ├── state_store.py        (in-memory, ⚠️ save_midi/get_midi 미구현)
+│   │       ├── task_registry.py      (spawn_job 추적)
+│   │       └── acestep_client.py
+│   └── data/
+│       └── projects/test-proj/
+│           ├── blocks/*.mp3          (생성된 오디오)
+│           └── midi/*.mid            (Basic Pitch 추출 MIDI, 추후)
 │
-├── frontend/              # Vite + React + TS (포트 5173)
-│   ├── index.html
-│   ├── src/
-│   │   ├── main.tsx
-│   │   ├── App.tsx        # 3패널 Glassmorphism 멀티트랙 레이아웃
-│   │   ├── components/    # UI 컴포넌트 (timeline/그리드, track/믹서, pianoroll/계이름, common)
-│   │   ├── audio/         # Web Audio API (AudioEngine, SoundFont Player, Scheduler)
-│   │   ├── store/         # Zustand Stores (project, playback, mixer, ui)
-│   │   ├── services/      # API/WS 클라이언트 (wsClient.ts)
-│   │   └── styles/        # theme.css, glassmorphism.css
-│   └── tsconfig.json
+└── frontend/src/
+    ├── App.tsx                       (27줄, 레이아웃 골조만)
+    ├── audio/
+    │   ├── AudioEngine.ts            (Web Audio API 엔진)
+    │   └── BlockScheduler.ts         (블록 스케줄링, 30Hz playhead)
+    ├── components/daw/               (13개 컴포넌트)
+    │   ├── DawHeader.tsx
+    │   ├── DawSidebar.tsx
+    │   ├── DawFooter.tsx
+    │   ├── Timeline.tsx
+    │   ├── TrackRow.tsx              (onDrop → 악기 스왑 트리거)
+    │   ├── TrackBlock.tsx            (더블클릭 → PianoRollModal, draggable)
+    │   ├── TransportControls.tsx
+    │   ├── SelectionOverlay.tsx      (2단 컴포넌트, 드래그 중 비활성 트랙 0 리렌더)
+    │   ├── ChatComposer.tsx          (AI 작곡 채팅)
+    │   ├── JobMessageView.tsx        (진행률 표시)
+    │   ├── PianoRollModal.tsx        (SVG 피아노 롤)
+    │   ├── AnalysisPanel.tsx         (도슨트 스트리밍)
+    │   └── SwapConfirmModal.tsx      (악기 스왑 확인)
+    ├── store/                        (7개 Zustand stores)
+    │   ├── useProjectStore.ts
+    │   ├── usePlaybackStore.ts       (BlockScheduler 래핑, 30Hz currentTime)
+    │   ├── useMixerStore.ts
+    │   ├── useSelectionStore.ts
+    │   ├── useJobStore.ts
+    │   ├── useNotesStore.ts          (Lazy-load + LRU-20)
+    │   └── useSwapStore.ts
+    ├── hooks/
+    │   ├── useGlobalShortcuts.ts     (ESC → clearSelection)
+    │   ├── useTimelineDrag.ts        (mousemove/mouseup → endDrag)
+    │   └── useSwapInstrument.ts      (swap API 호출)
+    ├── services/
+    │   ├── composeService.ts         (composeSequence, repaintSegment)
+    │   └── wsClient.ts               (WS 연결, block_ready/midi_ready 핸들러)
+    ├── constants/instruments.ts
+    ├── types/
+    │   ├── audio.ts                  (TimelineBlock, TimelineTrack)
+    │   └── midi.ts                   (Note, BlockMidi)
+    └── utils/formatTime.ts
+
 ```
 
 ---
 
-## 🤝 3. 타 AI 에이전트(GPT Pro / Claude)와 협업 시 팁
-* **멀티 트랙 아키텍처 연동**: 새로운 AI 에이전트에게 코딩을 맡길 때 이 청사진 문서를 제시하십시오. 
-* **구조 유지**: 악기 트랙별 `track_id`를 기반으로 오디오 파형이 렌더링되고, 하단 피아노 롤에서 MIDI 계이름 노트를 수정하면 해당 트랙의 볼륨 페이더 및 음소거(Mute) 상태와 유기적으로 결합되어 소리가 믹싱되어야 함을 명확히 주지시키면 오작동을 방지할 수 있습니다.
+## ⚠️ 4. 현재 알려진 버그 / 미구현 (2026-05-19)
+
+| 우선순위 | 항목 | 위치 | 설명 |
+|---------|------|------|------|
+| 🔴 Critical | WS 이벤트 이름 불일치 | wsClient.ts L28 | 백엔드: `block_complete` / 프론트: `block_ready` → 타임라인에 블록 안 보임 |
+| 🟡 Medium | Play 피드백 없음 | - | 위 버그 수정 후 자동 해결 예상 |
+| 🟠 Low | StateStore midi 메서드 없음 | state_store.py | `save_midi()`, `get_midi()`, `save_midi_status()` 추가 필요 |
+| 🟠 Low | ProgressBroker.publish_global 없음 | progress_broker.py | 모든 subscriber 브로드캐스트 메서드 |
+| 🟠 Low | basic-pitch Windows 설치 불가 | pyproject.toml | tensorflow-io-gcs-filesystem win_amd64 없음 → ONNX 대안 필요 |
+
+---
+
+## 🤝 5. 외부 AI 에이전트 협업 시 필수 주의사항
+1. **Zustand shallow selector 패턴 유지** — 모든 컴포넌트는 `s => s.fieldName` 형태로 필요한 필드만 구독
+2. **App.tsx는 레이아웃 골조만** — 비즈니스 로직은 hooks/services로 분리
+3. **GPU 락 필수** — ACE-Step 호출은 반드시 `async with self._gpu_lock:` 안에서
+4. **이벤트 이름 통일** — WS 이벤트 타입 변경 시 backend와 frontend 양쪽 동시 수정
+5. **드럼 트랙** — track_id에 "drum" 또는 "perc" 포함 시 Basic Pitch 스킵 → `status: "unavailable"`

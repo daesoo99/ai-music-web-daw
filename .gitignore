@@ -38,3 +38,6 @@ Thumbs.db
 *.bak
 *.bak[0-9]
 *.log
+
+# External Windows binaries (A-3d)
+lobster-ai-daw/backend/bin/
