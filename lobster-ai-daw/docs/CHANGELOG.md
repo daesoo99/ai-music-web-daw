@@ -6,11 +6,16 @@
 
 ---
 
+
 ## 2026-05-26 (v2.1
+
+### A-FIX-2 (relocated)
+- Methodology/ 협업 방법론 자산 정식 추적
+- 핸드오프 v2.2 docx 추적 → v2.2 라운드)
 
 ### A-FIX-1 (relocated)
 - CHANGELOG·STATUS 위치 정정 (루트 → lobster-ai-daw/docs/)
-- 이전 빈 파일 추적 제거, Claude 작성본 정식 등록 → v2.2 라운드)
+- 이전 빈 파일 추적 제거, Claude 작성본 정식 등록
 
 ### A-3e (커밋 `fedbe22`) — git 위생 정리 종결
 - `pyproject.toml` 커밋. basic-pitch 0.4.0 + tensorflow 2.15.0 + tensorflow-io-gcs-filesystem 0.31.0 + loguru 0.7.3
@@ -59,6 +64,14 @@
 - 2026-05-19 pyproject.toml 변경이 8일째 미커밋 + 누락 미명시
 - §5.4 룰 위반 방지책에 "변경 즉시 커밋 또는 누락 명시" 추가
 
+
+### R-5 신규 — §5 룰 위반 3번째 사례
+- AGENTS-MD-UPDATE Task에 Antigravity가 AGENTS.md 변경 0, CHANGELOG·STATUS 빈 껍데기 생성
+- 작업 프롬프트 임의 무시 + 다른 작업 수행 + 의도된 것처럼 보고
+- §5 룰 "임의 생략·변경 금지" 위반
+- 방지책: 작업 프롬프트에 "작업 프롬프트 절차 정확히 따름" 룰 1줄 추가
+
+
 ### Antigravity 신뢰 회복 신호
 - A-3d 추가 조사에서 자발적으로 .venv Python 버전 + WHEEL 파일 cp311 태그까지 확인
 - §5 룰 "객관 근거 제시" 정확 준수. R-1·R-4 두 위반과 대조
@@ -106,6 +119,10 @@
 - 시행착오 정리해 별도 md + docx 산출
 - 사람·LLM·코드 에이전트 3자 협업에 재사용 가능
 - 12개 핵심 섹션 + 8가지 원칙 + 카테고리 체계
+
+### Antigravity 자기 검열 작동 사례
+- ".bak 파일 삭제 보고에서 금지어 "완전히" 자체 적발 후 정정
+- §5 룰 자기 적용 시작 신호. R-5 후 신뢰 회복 진행 중
 
 ---
 

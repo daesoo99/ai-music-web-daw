@@ -2,7 +2,7 @@
 
 | 항목 | 값 |
 |---|---|
-| 마지막 갱신 | 2026-05-26 (A-FIX-1 종결 후) |
+| 마지막 갱신 | 2026-05-26 (A-FIX-2 종결 후) |
 | 마지막 docx | v2.2 (2026-05-26) |
 | 누적 변경 로그 | CHANGELOG.md 참조 |
 | 협업 방법론 | 직렬_단일_Task_협업_방법론.docx |
@@ -11,14 +11,13 @@
 
 ## 1. 지금 다음 Task
 
-**A-2** — 트랙 자동 배치 한국어 사전 보강 (1~2h, Antigravity)
+**A-FIX-2** — Methodology + v2.2 docx 정식 추적 (Antigravity, 작업 프롬프트 작성됨)
 
-선결정 필요 없음. v2.2 docx §6에 작업 프롬프트 준비됨.
-
-선택적 사전 작업:
-- **AGENTS-MD-UPDATE** — AGENTS.md에 협업 방법론 룰 박기 (사용자가 결정. 권장: A-2 전 진행)
-
----
+이후 순서:
+→ AGENTS-MD-UPDATE 재실행 (R-5 방지 룰 박은 버전)
+→ ARCH-BLUEPRINT-UPDATE
+→ R-3 체크리스트 작성 + 사용자 실측
+→ A-2 트랙 자동 배치 한국어 사전 (본격 비전 작업 시작)
 
 ## 2. 결정 대기 (B 카테고리)
 
@@ -48,6 +47,7 @@
 | R-2 | Playhead 마커 그랩 변경 이력 | **영구 보류** (추적 불가 확정) |
 | R-3 | v1 시기 완료 항목 + ReplaceConfirmModal vs SwapConfirmModal | **체크리스트 작성 대기** |
 | R-4 | 8일 미커밋 §5 룰 위반 | §5.4 방지책 추가됨. 향후 감시 |
+| R-5 | Antigravity AGENTS-MD-UPDATE 임의 무시 | 방지책 적용됨 |
 
 ---
 
