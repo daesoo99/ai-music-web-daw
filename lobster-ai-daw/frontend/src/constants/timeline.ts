@@ -1,0 +1,2 @@
+﻿export const TICK_INTERVAL_SECONDS = 10
+export const TRACK_HEADER_WIDTH_PX = 200

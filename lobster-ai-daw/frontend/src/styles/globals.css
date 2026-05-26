@@ -1,7 +1,82 @@
+
+:root {
+  /* 색상 토큰 */
+  --color-white: #ffffff;
+  --color-white-3: rgba(255, 255, 255, 0.03);
+  --color-white-5: rgba(255, 255, 255, 0.05);
+  --color-white-8: rgba(255, 255, 255, 0.08);
+  --color-white-10: rgba(255, 255, 255, 0.1);
+  --color-white-15: rgba(255, 255, 255, 0.15);
+  --color-white-20: rgba(255, 255, 255, 0.2);
+  --color-white-45: rgba(255, 255, 255, 0.45);
+  --color-white-50: rgba(255, 255, 255, 0.5);
+  --color-white-70: rgba(255, 255, 255, 0.7);
+  --color-black-20: rgba(0, 0, 0, 0.2);
+  --color-black-30: rgba(0, 0, 0, 0.3);
+  --color-black-40: rgba(0, 0, 0, 0.4);
+  --color-accent-danger:var(--color-accent-danger)#e74c3c;
+  --color-danger-light:var(--color-danger-light)#ff4757;
+  --color-success-light:var(--color-success-light)#2ecc71;
+  --color-accent-warning:var(--color-accent-warning)#f39c12;
+  --color-purple-accent:var(--color-purple-accent)#5a32a3;
+  --color-yellow-accent:var(--color-yellow-accent)#f1c40f;
+  --color-warning-bg: rgba(243, 156, 18, 0.12);
+  --color-warning-border: rgba(243, 156, 18, 0.3);
+  --color-warning-border-glow: rgba(243, 156, 18, 0.4);
+  --color-warning-glow: rgba(243, 156, 18, 0.8);
+  --color-warning-shadow: rgba(243, 156, 18, 0.4);
+  --color-playhead:var(--color-playhead)#ff3b30;
+  --color-playhead-glow: rgba(255, 59, 48, 0.5);
+
+  /* 여백 토큰 */
+  --spacing-1: 1px;
+  --spacing-2: 2px;
+  --spacing-3: 3px;
+  --spacing-4: 4px;
+  --spacing-5: 5px;
+  --spacing-6: 6px;
+  --spacing-8: 8px;
+  --spacing-10: 10px;
+  --spacing-12: 12px;
+  --spacing-15: 15px;
+  --spacing-16: 16px;
+  --spacing-20: 20px;
+  --spacing-24: 24px;
+  --spacing-32: 32px;
+  --spacing-60: 60px;
+  --spacing-120: 120px;
+  --spacing-180: 180px;
+  --spacing-200: 200px;
+  --spacing-250: 250px;
+  --spacing-320: 320px;
+
+  /* 폰트 토큰 */
+  --font-size-10: 10px;
+  --font-size-11: 11px;
+  --font-size-12: 12px;
+  --font-size-13: 13px;
+  --font-size-14: 14px;
+  --font-size-16: 16px;
+  --font-size-18: 18px;
+  --font-size-24: 24px;
+
+  /* Radius 토큰 */
+  --radius-4: 4px;
+  --radius-6: 6px;
+  --radius-8: 8px;
+  --radius-12: 12px;
+  --radius-20: 20px;
+  --radius-full: 9999px;
+}
+
 * {
+
   box-sizing: border-box;
+
   margin: 0;
+
   padding: 0;
+
 }
 
 body {
@@ -10,224 +85,457 @@ body {
   color: var(--text-primary);
   overflow: hidden;
   height: 100vh;
-  width: 100vw;
+  width: 100%;
+  max-width: 100%;
 }
 
 .daw-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  padding: 16px;
-  gap: 12px;
+  padding: var(--spacing-16);
+  gap: var(--spacing-12);
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .daw-header {
+
   display: flex;
+
   justify-content: space-between;
+
   align-items: center;
-  padding: 12px 24px;
-  height: 60px;
+
+  padding: var(--spacing-12) var(--spacing-24);
+
+  height: var(--spacing-60);
+
 }
 
 .logo-container {
+
   display: flex;
+
   align-items: center;
-  gap: 10px;
+
+  gap: var(--spacing-10);
+
 }
 
 .lobster-logo {
-  font-size: 24px;
+
+  font-size: var(--font-size-24);
+
 }
 
 .logo-container h1 {
-  font-size: 18px;
+
+  font-size: var(--font-size-18);
+
   font-weight: 800;
+
   letter-spacing: 1px;
+
   background: linear-gradient(45deg, var(--primary-royal), var(--secondary-coral));
+
   -webkit-background-clip: text;
+
   -webkit-text-fill-color: transparent;
+
 }
 
 .badge {
-  font-size: 10px;
+
+  font-size: var(--font-size-10);
+
   background: rgba(255, 255, 255, 0.1);
-  padding: 2px 6px;
-  border-radius: 20px;
+
+  padding: var(--spacing-2) var(--spacing-6);
+
+  border-radius: var(--radius-20);
+
 }
 
 .server-status {
+
   display: flex;
+
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+
+  gap: var(--spacing-8);
+
+  font-size: var(--font-size-12);
+
   color: var(--text-secondary);
+
 }
 
 .status-indicator {
-  width: 8px;
-  height: 8px;
+
+  width: var(--spacing-8);
+
+  height: var(--spacing-8);
+
   border-radius: 50%;
+
 }
 
 .status-indicator.online {
+
   background-color: var(--green-online);
+
   box-shadow: 0 0 8px var(--green-online);
+
 }
 
 .daw-workspace {
   display: flex;
   flex: 1;
-  gap: 12px;
-  height: calc(100vh - 120px);
+  gap: var(--spacing-12);
+  height: calc(100vh - var(--spacing-120));
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  box-sizing: border-box;
 }
 
 .daw-sidebar {
-  width: 250px;
-  padding: 16px;
+  width: var(--spacing-250);
+  min-width: var(--spacing-250);
+  flex-shrink: 0;
+  padding: var(--spacing-16);
 }
 
 .daw-sidebar h3, .daw-main-timeline h3, .daw-chat-panel h3 {
-  font-size: 14px;
-  margin-bottom: 12px;
+
+  font-size: var(--font-size-14);
+
+  margin-bottom: var(--spacing-12);
+
   color: var(--text-primary);
-  border-bottom: 1px solid var(--border-light);
-  padding-bottom: 8px;
+
+  border-bottom: var(--spacing-1) solid var(--border-light);
+
+  padding-bottom: var(--spacing-8);
+
 }
 
 .instrument-list {
+
   list-style: none;
+
   display: flex;
+
   flex-direction: column;
-  gap: 8px;
+
+  gap: var(--spacing-8);
+
 }
 
 .instrument-list li {
-  padding: 10px 12px;
-  border-radius: 6px;
+
+  padding: var(--spacing-10) var(--spacing-12);
+
+  border-radius: var(--radius-6);
+
   background: rgba(255, 255, 255, 0.02);
+
   cursor: pointer;
+
   transition: background 0.2s;
-  font-size: 13px;
+
+  font-size: var(--font-size-13);
+
 }
 
 .instrument-list li:hover {
+
   background: rgba(255, 255, 255, 0.05);
+
 }
 
 .daw-main-timeline {
   flex: 1;
-  padding: 16px;
+  min-width: 600px;
+  flex-shrink: 1;
+  padding: var(--spacing-16);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .timeline-header {
+
   display: flex;
+
   justify-content: space-between;
+
   align-items: center;
+
 }
 
 .transport-controls {
+
   display: flex;
-  gap: 8px;
+
+  gap: var(--spacing-8);
+
 }
 
 .transport-controls button {
+
   background: var(--primary-royal);
-  color: white;
+
+  color: var(--color-white);
+
   border: none;
-  padding: 6px 16px;
-  border-radius: 4px;
+
+  padding: var(--spacing-6) var(--spacing-16);
+
+  border-radius: var(--radius-4);
+
   cursor: pointer;
+
   font-weight: bold;
+
 }
 
 .transport-controls button.btn-stop {
+
   background: rgba(255, 255, 255, 0.1);
+
 }
 
 .timeline-body {
-  margin-top: 16px;
+
+  margin-top: var(--spacing-16);
+
   display: flex;
+
   flex-direction: column;
-  gap: 12px;
+
+  gap: var(--spacing-12);
+
   flex: 1;
+
 }
 
 .track-row {
+
   display: flex;
-  height: 60px;
+
+  height: var(--spacing-60);
+
   align-items: center;
-  border-bottom: 1px solid var(--border-light);
+
+  border-bottom: var(--spacing-1) solid var(--border-light);
+
 }
 
 .track-header {
-  width: 120px;
+
+  width: var(--spacing-120);
+
   font-weight: bold;
-  font-size: 12px;
+
+  font-size: var(--font-size-12);
+
 }
 
 .track-lane {
+
   flex: 1;
+
   display: flex;
+
   align-items: center;
-  padding: 0 10px;
+
+  padding: 0 var(--spacing-10);
+
 }
 
 .audio-block {
-  padding: 10px 20px;
+
+  padding: var(--spacing-10) var(--spacing-20);
+
   cursor: pointer;
+
 }
 
 .daw-chat-panel {
-  width: 320px;
-  padding: 16px;
+  width: var(--spacing-320);
+  min-width: var(--spacing-320);
+  flex-shrink: 0;
+  padding: var(--spacing-16);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .chat-history {
+
   flex: 1;
+
   overflow-y: auto;
-  margin-bottom: 12px;
+
+  margin-bottom: var(--spacing-12);
+
 }
 
 .message {
-  padding: 10px;
-  border-radius: 6px;
-  font-size: 12px;
+
+  padding: var(--spacing-10);
+
+  border-radius: var(--radius-6);
+
+  font-size: var(--font-size-12);
+
   background: rgba(255, 255, 255, 0.03);
+
 }
 
 .chat-input-container {
+
   display: flex;
-  gap: 8px;
+
+  gap: var(--spacing-8);
+
 }
 
 .chat-input-container input {
+
   flex: 1;
+
   background: rgba(255, 255, 255, 0.05);
+
   border: 1px solid var(--border-light);
-  border-radius: 4px;
-  padding: 8px;
-  color: white;
+
+  border-radius: var(--radius-4);
+
+  padding: var(--spacing-8);
+
+  color: var(--color-white);
+
 }
 
 .chat-input-container button {
+
   background: var(--secondary-coral);
-  color: white;
+
+  color: var(--color-white);
+
   border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
+
+  padding: var(--spacing-8) var(--spacing-16);
+
+  border-radius: var(--radius-4);
+
   cursor: pointer;
+
 }
 
 .daw-footer {
+
+  display: flex;
+
+  align-items: center;
+
+  padding: var(--spacing-6) var(--spacing-24);
+
+  font-size: var(--font-size-11);
+
+  color: var(--text-secondary);
+
+  height: var(--spacing-32);
+
+  gap: var(--spacing-12);
+
+}
+
+/* Repaint Banner Fine-grained Time Input Styles */
+.repaint-banner.flex-column {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--spacing-8);
+  background: rgba(243, 156, 18, 0.12);
+  border: 1px solid rgba(243, 156, 18, 0.3);
+  border-radius: var(--radius-8);
+  padding: var(--spacing-12);
+}
+
+.repaint-banner-header {
   display: flex;
   align-items: center;
-  padding: 6px 24px;
-  font-size: 11px;
-  color: var(--text-secondary);
-  height: 32px;
-  gap: 12px;
+  gap: var(--spacing-8);
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.repaint-banner-header .icon {
+  font-size: 1.25rem;
+}
+
+.repaint-inputs-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  flex-wrap: wrap;
+  margin-top: var(--spacing-4);
+}
+
+.time-input-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+}
+
+.time-input-group label {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+.repaint-time-input {
+  width: var(--spacing-120);
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(243, 156, 18, 0.4);
+  border-radius: var(--radius-4);
+  padding: var(--spacing-4) var(--spacing-8);
+  color: #fff;
+  font-size: 0.85rem;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.repaint-time-input:focus {
+  outline: none;
+  border-color: rgba(243, 156, 18, 0.8);
+  box-shadow: 0 0 4px rgba(243, 156, 18, 0.4);
+}
+
+.repaint-duration-label {
+  font-size: 0.8rem;
+  color: rgba(243, 156, 18, 0.9);
+  font-weight: bold;
+}
+
+
+.config-group,
+.slider-container-row,
+.preset-chips {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.duration-slider {
+  min-width: 0;
+  width: 100%;
 }

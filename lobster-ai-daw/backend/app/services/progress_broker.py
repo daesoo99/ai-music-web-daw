@@ -54,3 +54,20 @@ class ProgressBroker:
                     q.put_nowait(event)
                 except Exception as e:
                     logger.error(f"[ProgressBroker] Failed to publish event to subscriber: {e}")
+
+    async def publish_global(self, event: Dict[str, Any]):
+        """Publish an event to all active subscriber queues across all jobs (global broadcast)."""
+        async with self.lock:
+            for job_id, queues in list(self.subscribers.items()):
+                for q in list(queues):
+                    if q.full():
+                        try:
+                            # Drop oldest event to make room
+                            q.get_nowait()
+                            logger.warning(f"[ProgressBroker] Queue full for job {job_id} in global publish. Dropped oldest event.")
+                        except asyncio.QueueEmpty:
+                            pass
+                    try:
+                        q.put_nowait(event)
+                    except Exception as e:
+                        logger.error(f"[ProgressBroker] Failed to publish global event to subscriber in job {job_id}: {e}")

@@ -8,7 +8,25 @@ class StateStore:
     def __init__(self):
         self.jobs: Dict[str, Dict[str, Any]] = {}
         self.blocks: Dict[str, Dict[str, Any]] = {}
+        self.midis: Dict[str, Dict[str, Any]] = {}
         self.lock = asyncio.Lock()
+
+    async def save_midi_status(self, block_id: str, status_data: Dict[str, Any]):
+        """Save or update the transcription status of a MIDI block."""
+        async with self.lock:
+            if block_id not in self.midis:
+                self.midis[block_id] = {}
+            self.midis[block_id].update(status_data)
+
+    async def save_midi(self, block_id: str, midi_data: Dict[str, Any]):
+        """Save or update the full MIDI notes and metadata payload."""
+        async with self.lock:
+            self.midis[block_id] = midi_data
+
+    async def get_midi(self, block_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve MIDI details and notes by its block ID."""
+        async with self.lock:
+            return self.midis.get(block_id)
 
     async def save_job(self, job_id: str, job_data: Dict[str, Any]):
         """Save or update job status and metadata."""
@@ -47,3 +65,8 @@ class StateStore:
                 b for b in self.blocks.values()
                 if b.get("project_id") == project_id and b.get("track_id") == track_id
             ]
+
+    async def delete_block(self, block_id: str) -> None:
+        async with self.lock:
+            self.blocks.pop(block_id, None)
+            self.midis.pop(block_id, None)

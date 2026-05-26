@@ -1,93 +1,177 @@
 import asyncio
+
 import json
+
 import os
+
 from typing import Any, Callable, Dict, Optional
+
 import httpx
+
 from loguru import logger
 
+
+
 class ACEStepError(Exception):
+
     """Base exception for all ACE-Step client errors."""
+
     pass
+
+
 
 class ACEStepConnectionError(ACEStepError):
+
     """Raised when communication with Port 8001 fails."""
+
     pass
+
+
 
 class ACEStepTaskError(ACEStepError):
+
     """Raised when the task fails or is rejected by the server."""
+
     pass
+
+
 
 class ACEStepTimeoutError(ACEStepError):
+
     """Raised when the task polling exceeds the maximum timeout."""
+
     pass
 
+
+
 class ACEStepClient:
+
     """FastAPI wrapper service client for communicating with the ACE-Step 8001 AI Engine."""
 
+
+
     def __init__(self, base_url: str = "http://127.0.0.1:8001"):
+
         self.base_url = base_url
+
         self.client: Optional[httpx.AsyncClient] = None
 
+
+
     def start(self):
+
         """Initialize the connection pool client."""
+
         if not self.client:
-            self.client = httpx.AsyncClient(timeout=httpx.Timeout(30.0, read=300.0))
+
+            self.client = httpx.AsyncClient(timeout=httpx.Timeout(30.0, read=1800.0))
+
             logger.info(f"[ACEStepClient] Connection pool started for {self.base_url}")
 
+
+
     async def close(self):
+
         """Cleanly close the connection pool client."""
+
         if self.client:
+
             await self.client.aclose()
+
             self.client = None
+
             logger.info("[ACEStepClient] Connection pool closed")
 
+
+
     async def check_health(self) -> bool:
+
         """Check if Port 8001 AI Engine is active and healthy."""
+
         if not self.client:
+
             raise RuntimeError("ACEStepClient is not started. Call start() first.")
+
         try:
+
             r = await self.client.get(f"{self.base_url}/health", timeout=3.0)
+
             return r.status_code == 200
+
         except Exception as e:
+
             logger.warning(f"[ACEStepClient] Health check failed: {e}")
+
             return False
 
+
+
     async def release_task(self, payload: Dict[str, Any]) -> str:
+
         """Release a composition task to the ACE-Step AI Engine.
+
         
+
         Returns:
+
             str: The generated task_id.
+
         """
+
         if not self.client:
+
             raise RuntimeError("ACEStepClient is not started. Call start() first.")
+
         
+
         logger.info(f"[ACEStepClient] Submitting composition task. Payload keys: {list(payload.keys())}")
+
         try:
+
             r = await self.client.post(
+
                 f"{self.base_url}/release_task",
+
                 json=payload,
+
                 headers={"Content-Type": "application/json"}
+
             )
+
             if r.status_code != 200:
+
                 raise ACEStepTaskError(f"Server returned HTTP {r.status_code}: {r.text}")
+
                 
+
             response_data = r.json()
+
             if response_data.get("code") != 200 or response_data.get("error") is not None:
+
                 err_msg = response_data.get("error", "Unknown error")
+
                 raise ACEStepTaskError(f"Task rejected by engine: {err_msg}")
+
                 
+
             task_id = response_data["data"]["task_id"]
+
             logger.info(f"[ACEStepClient] Task successfully submitted. Task ID: {task_id}")
+
             return task_id
+
         except httpx.RequestError as e:
+
             raise ACEStepConnectionError(f"Failed to submit task (network error): {e}")
+
+
 
     async def wait_for_completion(
         self,
         task_id: str,
         progress_callback: Optional[Callable[[float], Any]] = None,
-        timeout_sec: float = 300.0,
-        poll_interval_sec: float = 3.0
+        timeout_sec: float = 1800.0,
+        poll_interval_sec: float = 0.5
     ) -> str:
         """Poll the /query_result endpoint until the task completes.
         
@@ -107,6 +191,8 @@ class ACEStepClient:
             if elapsed > timeout_sec:
                 raise ACEStepTimeoutError(f"Generation timed out after {timeout_sec}s")
                 
+            real_progress_notified = False
+            
             try:
                 r = await self.client.post(
                     f"{self.base_url}/query_result",
@@ -139,11 +225,29 @@ class ACEStepClient:
                     elif status == 2:  # Failed
                         raise ACEStepTaskError(f"Task {task_id} failed on the AI Engine server side.")
                         
+                    elif status == 0:  # Running
+                        try:
+                            result_list = json.loads(task_info.get("result", "[]"))
+                            if result_list and isinstance(result_list, list) and len(result_list) > 0:
+                                inner_task = result_list[0]
+                                real_progress = inner_task.get("progress")
+                                if real_progress is not None:
+                                    real_progress_val = float(real_progress)
+                                    logger.info(f"[ACEStepClient] Real task progress: {real_progress_val * 100:.1f}%")
+                                    if progress_callback:
+                                        try:
+                                            progress_callback(real_progress_val)
+                                        except Exception as cb_err:
+                                            logger.error(f"[ACEStepClient] Real progress callback exception: {cb_err}")
+                                    real_progress_notified = True
+                        except Exception as pe:
+                            logger.warning(f"[ACEStepClient] Failed to parse real progress: {pe}")
+                            
             except httpx.RequestError as e:
                 logger.warning(f"[ACEStepClient] Connection issue during status polling: {e}")
                 
-            # UX Heuristic progress updates: cap at 0.95 until completion
-            if progress_callback:
+            # UX Heuristic progress updates: cap at 0.95 until completion, fallback only
+            if progress_callback and not real_progress_notified:
                 # Estimate progress assuming a standard generation takes ~25s
                 est_progress = min(0.95, elapsed / 25.0)
                 try:
@@ -154,34 +258,130 @@ class ACEStepClient:
             await asyncio.sleep(poll_interval_sec)
 
     async def download_audio(self, server_path: str, local_dest_path: str):
+
         """Download the rendered audio file from Port 8001 and save it locally."""
+
         if not self.client:
+
             raise RuntimeError("ACEStepClient is not started. Call start() first.")
+
             
+
         download_url = f"{self.base_url}{server_path}"
+
         logger.info(f"[ACEStepClient] Downloading audio from {download_url} to {local_dest_path}")
+
         
+
         try:
+
             r = await self.client.get(download_url)
+
             if r.status_code != 200:
+
                 raise ACEStepTaskError(f"Failed to download audio file (HTTP {r.status_code})")
+
                 
+
             # Ensure the directory exists
+
             os.makedirs(os.path.dirname(local_dest_path), exist_ok=True)
+
             with open(local_dest_path, "wb") as f:
+
                 f.write(r.content)
+
             logger.info(f"[ACEStepClient] Audio file successfully downloaded: {local_dest_path}")
+
         except httpx.RequestError as e:
+
             raise ACEStepConnectionError(f"Failed to download audio due to network error: {e}")
 
+
+
     async def compose(
+
         self,
+
         payload: Dict[str, Any],
+
         local_dest_path: str,
+
         progress_callback: Optional[Callable[[float], Any]] = None
+
     ) -> str:
+
         """Helper that coordinates the full release-wait-download lifecycle in a single call."""
+
         task_id = await self.release_task(payload)
+
         server_path = await self.wait_for_completion(task_id, progress_callback)
+
         await self.download_audio(server_path, local_dest_path)
+
         return local_dest_path
+
+
+
+    async def repaint_audio(
+
+        self,
+
+        source_audio_path: str,
+
+        start_seconds: float,
+
+        end_seconds: float,
+
+        new_prompt: str,
+
+        bpm: int,
+
+        keyscale: str,
+
+        inference_steps: int,
+
+        repaint_variance: float,
+
+        local_dest_path: str,
+
+        progress_callback: Optional[Callable[[float], Any]] = None,
+
+    ) -> str:
+
+        """Call Port 8001 server to repaint/regenerate a target time range of source audio."""
+
+        payload = {
+
+            "task_type": "repaint",
+
+            "prompt": new_prompt,
+
+            "src_audio_path": source_audio_path,
+
+            "repainting_start": float(start_seconds),
+
+            "repainting_end": float(end_seconds),
+
+            "repaint_mode": "balanced",
+
+            "repaint_strength": float(repaint_variance),
+
+            "bpm": int(bpm),
+
+            "key_scale": keyscale,
+
+            "inference_steps": int(inference_steps),
+
+            "lyrics": "[Instrumental]",
+
+            "audio_format": "mp3",
+
+            "thinking": False,
+
+            "batch_size": 1,
+
+        }
+
+        return await self.compose(payload, local_dest_path, progress_callback)
+

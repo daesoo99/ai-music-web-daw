@@ -1,0 +1,64 @@
+import { memo, useState, useCallback } from 'react'
+import type { TimelineBlock } from '../../types/audio'
+import { MIN_TIMELINE_DURATION_SECONDS } from '../../constants/instruments'
+import { PianoRollModal } from './PianoRollModal'
+import { AnalysisPanel } from './AnalysisPanel'
+
+interface TrackBlockProps {
+  block: TimelineBlock
+  timelineDuration: number
+}
+
+function TrackBlockInner({ block, timelineDuration }: TrackBlockProps) {
+  const [pianoRollOpen, setPianoRollOpen] = useState(false)
+  const [analysisOpen, setAnalysisOpen] = useState(false)
+  
+  const totalDuration = Math.max(timelineDuration, MIN_TIMELINE_DURATION_SECONDS)
+  const leftPercent = (block.timelineStartSeconds / totalDuration) * 100
+  const widthPercent = (block.durationSeconds / totalDuration) * 100
+  
+  const handleDragStart = useCallback((e: React.DragEvent) => {
+    e.dataTransfer.effectAllowed = 'copyMove'
+    e.dataTransfer.setData('application/x-lobster-block', JSON.stringify({
+      blockId: block.blockId,
+      sourceTrackId: block.trackId,
+      durationSeconds: block.durationSeconds,
+    }))
+  }, [block])
+  
+  const blockLabel = block.prompt
+    ? (block.prompt.length > 25 ? `${block.prompt.substring(0, 22)}...` : block.prompt)
+    : `${block.blockId.substring(0, 8)}...`
+
+  return (
+    <>
+      <div
+        className="audio-block glass-block"
+        style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
+        draggable
+        onDragStart={handleDragStart}
+        onDoubleClick={() => setPianoRollOpen(true)}
+        title="더블클릭: 피아노 롤 열기 / 드래그: 다른 트랙으로 악기 스왑"
+      >
+        {blockLabel} ({block.durationSeconds}s)
+      </div>
+      
+      {pianoRollOpen && (
+        <PianoRollModal
+          blockId={block.blockId}
+          onClose={() => setPianoRollOpen(false)}
+          onAnalyze={() => { setPianoRollOpen(false); setAnalysisOpen(true) }}
+        />
+      )}
+      {analysisOpen && (
+        <AnalysisPanel
+          blockId={block.blockId}
+          onClose={() => setAnalysisOpen(false)}
+        />
+      )}
+    </>
+  )
+}
+
+export const TrackBlock = memo(TrackBlockInner)
+

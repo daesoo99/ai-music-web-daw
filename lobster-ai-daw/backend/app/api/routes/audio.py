@@ -18,7 +18,12 @@ async def get_project_block_audio(project_id: str, block_id: str):
     return FileResponse(
         path=physical_path,
         media_type="audio/mpeg",
-        filename=f"{block_id}.mp3"
+        filename=f"{block_id}.mp3",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
     )
 
 @router.get("/projects/{project_id}/tails/{block_id}_tail.mp3")
@@ -32,5 +37,29 @@ async def get_project_block_tail_audio(project_id: str, block_id: str):
     return FileResponse(
         path=physical_path,
         media_type="audio/mpeg",
-        filename=f"{block_id}_tail.mp3"
+        filename=f"{block_id}_tail.mp3",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
+
+@router.get("/projects/{project_id}/midi/{block_id}.mid")
+async def get_project_block_midi_file(project_id: str, block_id: str):
+    """Serve block MIDI files securely from data/projects/{project_id}/midi."""
+    physical_path = os.path.join(BASE_DATA_DIR, "projects", project_id, "midi", f"{block_id}.mid")
+    if not os.path.exists(physical_path):
+        logger.warning(f"[AudioRoute] Requested MIDI file not found: {physical_path}")
+        raise HTTPException(status_code=404, detail="MIDI file not found")
+        
+    return FileResponse(
+        path=physical_path,
+        media_type="audio/midi",
+        filename=f"{block_id}.mid",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
     )

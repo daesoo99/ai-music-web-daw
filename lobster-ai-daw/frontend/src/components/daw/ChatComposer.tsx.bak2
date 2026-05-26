@@ -1,0 +1,242 @@
+import { useState, useCallback, useMemo } from 'react'
+import { shallow } from 'zustand/shallow'
+import { useSelectionStore } from '../../store/useSelectionStore'
+import { useProjectStore } from '../../store/useProjectStore'
+import { useJobStore } from '../../store/useJobStore'
+import { wsClient } from '../../services/wsClient'
+import {
+  composeSequence,
+  repaintSegment,
+  ComposeServiceError,
+} from '../../services/composeService'
+import { COMPOSER_INSTRUMENTS, PROJECT_ID } from '../../constants/instruments'
+import { formatTime } from '../../utils/formatTime'
+import { JobMessageView } from './JobMessageView'
+
+interface RepaintInfo {
+  sourceBlockId: string
+  trackId: string
+  startSeconds: number
+  endSeconds: number
+}
+
+export function ChatComposer() {
+  const [chatInput, setChatInput] = useState('')
+  const [selectedTrackId, setSelectedTrackId] = useState('piano')
+  const [durationSeconds, setDurationSeconds] = useState(60)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [systemError, setSystemError] = useState<string | null>(null)
+
+  const repaintInfo = useSelectionStore<RepaintInfo | null>(
+    s => (s.valid && s.sourceBlockId && s.trackId
+      ? {
+          sourceBlockId: s.sourceBlockId,
+          trackId: s.trackId,
+          startSeconds: s.startSeconds,
+          endSeconds: s.endSeconds,
+        }
+      : null),
+    shallow,
+  )
+  const clearSelection = useSelectionStore(s => s.clearSelection)
+
+  const jobIds = useJobStore(s => Object.keys(s.jobs), shallow)
+
+  const isRepaintMode = repaintInfo !== null
+  const selectedInstrument = useMemo(
+    () => COMPOSER_INSTRUMENTS.find(i => i.id === selectedTrackId) ?? COMPOSER_INSTRUMENTS[0],
+    [selectedTrackId],
+  )
+
+  const handleSubmit = useCallback(async () => {
+    const promptText = chatInput.trim()
+    if (!promptText || isSubmitting) return
+
+    setChatInput('')
+    setIsSubmitting(true)
+    setSystemError(null)
+
+    try {
+      if (isRepaintMode && repaintInfo) {
+        const { job_id } = await repaintSegment({
+          projectId: PROJECT_ID,
+          sourceBlockId: repaintInfo.sourceBlockId,
+          trackId: repaintInfo.trackId,
+          startSeconds: repaintInfo.startSeconds,
+          endSeconds: repaintInfo.endSeconds,
+          newPrompt: promptText,
+        })
+        const label = `[Repaint ${repaintInfo.startSeconds.toFixed(1)}-${repaintInfo.endSeconds.toFixed(1)}] ${promptText}`
+        useJobStore.getState().startJob(job_id, label)
+        wsClient.subscribe(job_id, PROJECT_ID)
+        clearSelection()
+      } else {
+        ensureTrackRegistered(selectedTrackId)
+        const { job_id } = await composeSequence({
+          projectId: PROJECT_ID,
+          specs: [{
+            prompt: promptText,
+            duration_seconds: durationSeconds,
+            track_id: selectedTrackId,
+          }],
+        })
+        useJobStore.getState().startJob(job_id, promptText)
+        wsClient.subscribe(job_id, PROJECT_ID)
+      }
+    } catch (err) {
+      const message = err instanceof ComposeServiceError
+        ? err.message
+        : (err as Error).message ?? '알 수 없는 오류'
+      setSystemError(`❌ 요청 실패: ${message}`)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }, [
+    chatInput, isSubmitting, isRepaintMode, repaintInfo,
+    selectedTrackId, durationSeconds, clearSelection,
+  ])
+
+  return (
+    <section className="daw-chat-panel glass-card">
+      <h3>💬 AI Co-Composer</h3>
+      <div className="chat-history">
+        <div className="message system">
+          <p>Welcome! Ask me to compose blocks or drag to repaint.</p>
+        </div>
+        {systemError && (
+          <div className="message system error"><p>{systemError}</p></div>
+        )}
+        {jobIds.map(jobId => (
+          <JobMessageView key={jobId} jobId={jobId} />
+        ))}
+      </div>
+
+      <div
+        className={`chat-input-container composer-input-area ${
+          isRepaintMode ? 'repaint-mode' : ''
+        }`}
+      >
+        {isRepaintMode && repaintInfo ? (
+          <RepaintBanner info={repaintInfo} onCancel={clearSelection} />
+        ) : (
+          <ComposeConfigRow
+            selectedTrackId={selectedTrackId}
+            onSelectedTrackChange={setSelectedTrackId}
+            durationSeconds={durationSeconds}
+            onDurationChange={setDurationSeconds}
+            disabled={isSubmitting}
+          />
+        )}
+
+        <div className="chat-input-row">
+          <input
+            type="text"
+            placeholder={isRepaintMode
+              ? 'e.g., add subtle drums to this segment...'
+              : `e.g., calm ${selectedInstrument.displayName.toLowerCase()} intro...`}
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+            disabled={isSubmitting}
+          />
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !chatInput.trim()}
+            className={isRepaintMode ? 'btn-repaint' : ''}
+          >
+            {isSubmitting ? '...' : isRepaintMode ? 'Repaint' : 'Send'}
+          </button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function RepaintBanner({
+  info, onCancel,
+}: { info: RepaintInfo; onCancel: () => void }) {
+  return (
+    <div className="repaint-banner">
+      <span className="icon">🎯</span>
+      <span>
+        <strong>Repaint Mode:</strong>{' '}
+        {formatTime(info.startSeconds)}–{formatTime(info.endSeconds)}{' '}
+        ({(info.endSeconds - info.startSeconds).toFixed(1)}s)
+        <br />
+        <small>in {info.trackId} · block {info.sourceBlockId.substring(0, 8)}</small>
+      </span>
+      <button className="btn-cancel-repaint" onClick={onCancel}>✕</button>
+    </div>
+  )
+}
+
+interface ComposeConfigRowProps {
+  selectedTrackId: string
+  onSelectedTrackChange: (id: string) => void
+  durationSeconds: number
+  onDurationChange: (d: number) => void
+  disabled: boolean
+}
+
+function ComposeConfigRow({
+  selectedTrackId, onSelectedTrackChange,
+  durationSeconds, onDurationChange, disabled,
+}: ComposeConfigRowProps) {
+  return (
+    <div className="chat-config-row">
+      <div className="config-group">
+        <label>Track:</label>
+        <select
+          value={selectedTrackId}
+          onChange={(e) => onSelectedTrackChange(e.target.value)}
+          disabled={disabled}
+        >
+          {COMPOSER_INSTRUMENTS.map(inst => (
+            <option key={inst.id} value={inst.id}>{inst.name}</option>
+          ))}
+        </select>
+      </div>
+      
+      <div className="config-group duration-group">
+        <div className="duration-header">
+          <label>Length:</label>
+        </div>
+        <div className="slider-container-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span className="slider-bound">10s</span>
+          <input
+            type="range" min="10" max="180" step={5}
+            value={durationSeconds}
+            onChange={(e) => onDurationChange(parseInt(e.target.value))}
+            disabled={disabled}
+            className="duration-slider"
+            style={{ flex: 1 }}
+          />
+          <span className="slider-bound" style={{ marginRight: '8px' }}>180s</span>
+          <span className="duration-value-large" style={{ fontSize: '1.25rem', fontWeight: 'bold', minWidth: '50px', textAlign: 'right' }}>
+            {durationSeconds}s
+          </span>
+        </div>
+        <div className="preset-chips">
+          {[60, 90, 120, 150, 180].map(val => (
+            <button
+              key={val}
+              className={`chip ${durationSeconds === val ? 'active' : ''}`}
+              onClick={() => onDurationChange(val)}
+              disabled={disabled}
+            >
+              {val}s
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ensureTrackRegistered(trackId: string): void {
+  const { tracks, blocks, setProject } = useProjectStore.getState()
+  if (tracks.find(t => t.trackId === trackId)) return
+  const inst = COMPOSER_INSTRUMENTS.find(i => i.id === trackId)
+  const trackName = inst ? inst.name : `${trackId} Track`
+  setProject([...tracks, { trackId, name: trackName }], blocks)
+}

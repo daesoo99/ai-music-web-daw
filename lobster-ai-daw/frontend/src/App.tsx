@@ -1,82 +1,60 @@
-import React from 'react'
+import { useEffect } from 'react'
 import './styles/theme.css'
 import './styles/glassmorphism.css'
 
+import { DawHeader } from './components/daw/DawHeader'
+import { DawSidebar } from './components/daw/DawSidebar'
+import { DawFooter } from './components/daw/DawFooter'
+import { Timeline } from './components/daw/Timeline'
+import { ChatComposer } from './components/daw/ChatComposer'
+import { useGlobalShortcuts } from './hooks/useGlobalShortcuts'
+import { SwapConfirmModal } from './components/daw/SwapConfirmModal'
+import { loadProjectState } from './services/projectPersistence'
+import { PianoRollModal } from './components/daw/PianoRollModal'
+import { AnalysisPanel } from './components/daw/AnalysisPanel'
+import { useProjectStore } from './store/useProjectStore'
+
 function App() {
+  useGlobalShortcuts()
+
+  const activePianoRollBlockId = useProjectStore(s => s.activePianoRollBlockId)
+  const setActivePianoRollBlockId = useProjectStore(s => s.setActivePianoRollBlockId)
+  const activeAnalysisBlockId = useProjectStore(s => s.activeAnalysisBlockId)
+  const setActiveAnalysisBlockId = useProjectStore(s => s.setActiveAnalysisBlockId)
+
+  // 앱 마운트 시 저장된 프로젝트 상태 자동 복원
+  useEffect(() => {
+    loadProjectState()
+  }, [])
+
   return (
     <div className="daw-container">
-      {/* Header bar */}
-      <header className="daw-header glass-card">
-        <div className="logo-container">
-          <span className="lobster-logo">🦞</span>
-          <h1>LOBSTER AI WEB DAW</h1>
-          <span className="badge">v1.0</span>
-        </div>
-        <div className="server-status">
-          <span className="status-indicator online"></span>
-          <span>API Wrapper Status: Online (8002)</span>
-        </div>
-      </header>
-
-      {/* Main content workspace */}
+      <DawHeader />
       <div className="daw-workspace">
-        {/* Left panel: Instrument Library */}
-        <aside className="daw-sidebar glass-card">
-          <h3>Instruments</h3>
-          <ul className="instrument-list">
-            <li><span className="icon">🎹</span> Grand Piano</li>
-            <li><span className="icon">🎻</span> Strings Ensemble</li>
-            <li><span className="icon">🥁</span> Acoustic Drums</li>
-            <li><span className="icon">🎸</span> Bass Guitar</li>
-          </ul>
-        </aside>
-
-        {/* Center panel: Timeline & Tracks */}
-        <main className="daw-main-timeline glass-card">
-          <div className="timeline-header">
-            <h3>Timeline Editor</h3>
-            <div className="transport-controls">
-              <button className="btn-play">▶ Play</button>
-              <button className="btn-stop">■ Stop</button>
-            </div>
-          </div>
-          <div className="timeline-body">
-            <div className="track-row">
-              <div className="track-header">🎹 Track 1</div>
-              <div className="track-lane">
-                <div className="audio-block glass-block">Intro Block (30s)</div>
-              </div>
-            </div>
-            <div className="track-row">
-              <div className="track-header">🎻 Track 2</div>
-              <div className="track-lane">
-                <div className="audio-block glass-block">Verse Block (30s)</div>
-              </div>
-            </div>
-          </div>
-        </main>
-
-        {/* Right panel: AI Chat assistant */}
-        <section className="daw-chat-panel glass-card">
-          <h3>💬 AI Co-Composer</h3>
-          <div className="chat-history">
-            <div className="message system">
-              <p>Welcome! Ask me to compose blocks or edit specific segments on the timeline.</p>
-            </div>
-          </div>
-          <div className="chat-input-container">
-            <input type="text" placeholder="e.g., Generate a 30s piano intro..." />
-            <button>Send</button>
-          </div>
-        </section>
+        <DawSidebar />
+        <Timeline />
+        <ChatComposer />
       </div>
+      <DawFooter />
+      <SwapConfirmModal />
 
-      {/* Bottom bar */}
-      <footer className="daw-footer glass-card">
-        <span>GPU: RTX 4060 (Active)</span>
-        <span>|</span>
-        <span>Buffer Status: Ready</span>
-      </footer>
+      {activePianoRollBlockId && (
+        <PianoRollModal
+          blockId={activePianoRollBlockId}
+          onClose={() => setActivePianoRollBlockId(null)}
+          onAnalyze={() => {
+            setActivePianoRollBlockId(null)
+            setActiveAnalysisBlockId(activePianoRollBlockId)
+          }}
+        />
+      )}
+
+      {activeAnalysisBlockId && (
+        <AnalysisPanel
+          blockId={activeAnalysisBlockId}
+          onClose={() => setActiveAnalysisBlockId(null)}
+        />
+      )}
     </div>
   )
 }

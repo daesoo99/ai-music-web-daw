@@ -1,0 +1,251 @@
+import { create } from 'zustand'
+import type { TimelineBlock, TimelineTrack } from '../types/audio'
+import { useMixerStore } from './useMixerStore'
+import { usePlaybackStore } from './usePlaybackStore'
+import { debouncedSave } from '../services/projectPersistence'
+
+const MAX_HISTORY_STACK_SIZE = 50
+
+interface HistoryItem {
+  actionName: string
+  tracks: TimelineTrack[]
+  blocks: TimelineBlock[]
+}
+
+interface ProjectState {
+  tracks: TimelineTrack[]
+  blocks: TimelineBlock[]
+
+  // History State
+  historyStack: HistoryItem[]
+  historyIndex: number
+
+  setProject: (tracks: TimelineTrack[], blocks: TimelineBlock[], actionName?: string) => void
+  addBlock: (block: TimelineBlock) => void
+  updateBlock: (blockId: string, patch: Partial<TimelineBlock>) => void
+  removeBlock: (blockId: string) => void
+
+  // History Actions
+  pushHistory: (actionName: string, tracks: TimelineTrack[], blocks: TimelineBlock[]) => void
+  undo: () => void
+  redo: () => void
+  jumpToHistory: (index: number) => void
+}
+
+interface HistoryState {
+  historyStack: HistoryItem[]
+  historyIndex: number
+}
+
+function deepClone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
+function createHistoryItem(
+  actionName: string,
+  tracks: TimelineTrack[],
+  blocks: TimelineBlock[],
+): HistoryItem {
+  return {
+    actionName,
+    tracks: deepClone(tracks),
+    blocks: deepClone(blocks),
+  }
+}
+
+function clampHistoryIndex(index: number, stackLength: number): number {
+  if (stackLength <= 0) return 0
+  return Math.min(Math.max(index, 0), stackLength - 1)
+}
+
+function appendHistoryWithLimit(
+  historyStack: HistoryItem[],
+  historyIndex: number,
+  nextItem: HistoryItem,
+): HistoryState {
+  const safeIndex = clampHistoryIndex(historyIndex, historyStack.length)
+
+  // undo 이후 새 액션이 들어온 경우, 현재 index 이후의 redo 이력 제거
+  const branchedStack = historyStack.slice(0, safeIndex + 1)
+
+  const appendedStack = [...branchedStack, nextItem]
+  const appendedIndex = appendedStack.length - 1
+
+  const overflowCount = Math.max(
+    0,
+    appendedStack.length - MAX_HISTORY_STACK_SIZE,
+  )
+
+  if (overflowCount === 0) {
+    return {
+      historyStack: appendedStack,
+      historyIndex: appendedIndex,
+    }
+  }
+
+  return {
+    historyStack: appendedStack.slice(overflowCount),
+    historyIndex: Math.max(0, appendedIndex - overflowCount),
+  }
+}
+
+function syncBlocksToScheduler(blocks: TimelineBlock[]): void {
+  usePlaybackStore.getState().loadBlocks(blocks)
+}
+
+export const useProjectStore = create<ProjectState>((set, get) => ({
+  tracks: [],
+  blocks: [],
+
+  // Initial History Session
+  historyStack: [{ actionName: '초기 세션 시작', tracks: [], blocks: [] }],
+  historyIndex: 0,
+
+  pushHistory: (actionName, tracks, blocks) => {
+    set((s) => {
+      const nextItem = createHistoryItem(actionName, tracks, blocks)
+
+      return appendHistoryWithLimit(
+        s.historyStack,
+        s.historyIndex,
+        nextItem,
+      )
+    })
+  },
+
+  undo: () => {
+    const { historyStack, historyIndex } = get()
+    if (historyIndex <= 0) return
+
+    const nextIndex = historyIndex - 1
+    const target = historyStack[nextIndex]
+
+    set({
+      tracks: target.tracks,
+      blocks: target.blocks,
+      historyIndex: nextIndex,
+    })
+
+    const mixer = useMixerStore.getState()
+    for (const t of target.tracks) {
+      mixer.registerTrack(t.trackId)
+    }
+
+    syncBlocksToScheduler(target.blocks)
+    debouncedSave()
+  },
+
+  redo: () => {
+    const { historyStack, historyIndex } = get()
+    if (historyIndex >= historyStack.length - 1) return
+
+    const nextIndex = historyIndex + 1
+    const target = historyStack[nextIndex]
+
+    set({
+      tracks: target.tracks,
+      blocks: target.blocks,
+      historyIndex: nextIndex,
+    })
+
+    const mixer = useMixerStore.getState()
+    for (const t of target.tracks) {
+      mixer.registerTrack(t.trackId)
+    }
+
+    syncBlocksToScheduler(target.blocks)
+    debouncedSave()
+  },
+
+  jumpToHistory: (index) => {
+    const { historyStack } = get()
+    if (index < 0 || index >= historyStack.length) return
+
+    const target = historyStack[index]
+
+    set({
+      tracks: target.tracks,
+      blocks: target.blocks,
+      historyIndex: index,
+    })
+
+    const mixer = useMixerStore.getState()
+    for (const t of target.tracks) {
+      mixer.registerTrack(t.trackId)
+    }
+
+    syncBlocksToScheduler(target.blocks)
+    debouncedSave()
+  },
+
+  setProject: (tracks, blocks, actionName) => {
+    set({ tracks, blocks })
+
+    const mixer = useMixerStore.getState()
+    for (const t of tracks) {
+      mixer.registerTrack(t.trackId)
+    }
+
+    syncBlocksToScheduler(blocks)
+    debouncedSave()
+
+    if (actionName) {
+      get().pushHistory(actionName, tracks, blocks)
+      return
+    }
+
+    const { historyStack } = get()
+    const shouldReplaceInitialHistory =
+      historyStack.length <= 1 &&
+      (
+        historyStack[0]?.actionName === '초기 세션 시작' ||
+        historyStack[0]?.actionName === '프로젝트 복원'
+      )
+
+    if (shouldReplaceInitialHistory) {
+      set({
+        historyStack: [
+          createHistoryItem('프로젝트 복원', tracks, blocks),
+        ],
+        historyIndex: 0,
+      })
+    }
+  },
+
+  addBlock: (block) => {
+    set((s) => ({ blocks: [...s.blocks, block] }))
+    syncBlocksToScheduler(get().blocks)
+    debouncedSave()
+
+    get().pushHistory('블록 생성', get().tracks, get().blocks)
+  },
+
+  updateBlock: (blockId, patch) => {
+    set((s) => ({
+      blocks: s.blocks.map((b) =>
+        b.blockId === blockId ? { ...b, ...patch } : b,
+      ),
+    }))
+
+    syncBlocksToScheduler(get().blocks)
+    debouncedSave()
+
+    const hasTimelineChange =
+      patch.timelineStartSeconds !== undefined ||
+      patch.trackId !== undefined
+
+    const label = hasTimelineChange ? '블록 위치 이동' : '블록 편집'
+    get().pushHistory(label, get().tracks, get().blocks)
+  },
+
+  removeBlock: (blockId) => {
+    set((s) => ({
+      blocks: s.blocks.filter((b) => b.blockId !== blockId),
+    }))
+
+    syncBlocksToScheduler(get().blocks)
+    debouncedSave()
+
+    get().pushHistory('블록 삭제', get().tracks, get().blocks)
+  },
+}))

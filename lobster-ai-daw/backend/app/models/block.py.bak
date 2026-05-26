@@ -1,0 +1,50 @@
+from pydantic import BaseModel, Field
+from typing import List, Optional
+
+class BlockSpec(BaseModel):
+    prompt: str
+    duration_seconds: float = Field(default=30.0, alias="duration")
+    bpm: int = 120
+    keyscale: str = "C Major"
+    track_id: str = "default-track"
+    
+    class Config:
+        populate_by_name = True
+
+class BlockSequenceRequest(BaseModel):
+    project_id: str = "default-project"
+    specs: List[BlockSpec]
+    bpm: Optional[int] = None
+    keyscale: Optional[str] = None
+    ref_audio_strength: float = 0.6
+
+class SequenceResponse(BaseModel):
+    job_id: str
+    block_count: int
+
+class RepaintRequest(BaseModel):
+    project_id: str = Field(..., description="프로젝트(곡) ID")
+    source_block_id: str = Field(..., description="재생성 대상이 되는 원본 블록 ID")
+    track_id: str = Field(..., description="대상 트랙 ID (악기 트랙 구분용)")
+    start_seconds: float = Field(..., ge=0.0, description="재생성 구간 시작 (초)")
+    end_seconds: float = Field(..., gt=0.0, description="재생성 구간 종료 (초)")
+    new_prompt: str = Field(..., min_length=1, description="해당 구간에 적용할 새 프롬프트")
+    bpm: Optional[int] = Field(default=None, ge=40, le=240)
+    keyscale: Optional[str] = Field(default=None, description="예: 'D Major', 'A Minor'")
+    inference_steps: int = Field(default=25, ge=10, le=60, description="DiT 추론 스텝")
+    repaint_variance: float = Field(default=0.5, ge=0.0, le=1.0, description="변형 강도")
+
+    from pydantic import model_validator
+    @model_validator(mode="after")
+    def _validate_range(self) -> "RepaintRequest":
+        if self.end_seconds <= self.start_seconds:
+            raise ValueError("end_seconds must be greater than start_seconds")
+        duration = self.end_seconds - self.start_seconds
+        if duration > 60.0:
+            raise ValueError(f"Repaint duration max is 60s (requested: {duration:.2f}s)")
+        return self
+
+class RepaintAccepted(BaseModel):
+    job_id: str
+    status: str = "accepted"
+    ws_url: str
