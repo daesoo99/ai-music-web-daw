@@ -83,7 +83,16 @@ async def run_sequence_composition_task(
             )
             
             # timelineStartSeconds 바인딩
-            block_meta["timelineStartSeconds"] = spec.get("timeline_start_seconds", 0.0)
+            start_sec = 0.0
+            if spec.get("start_time") is not None:
+                start_sec = float(spec.get("start_time"))
+            elif previous_block_id:
+                prev_block = await state_store.get_block(previous_block_id)
+                if prev_block:
+                    prev_start = prev_block.get("timelineStartSeconds", 0.0)
+                    prev_dur = prev_block.get("durationSeconds", prev_block.get("duration", 0.0))
+                    start_sec = prev_start + prev_dur
+            block_meta["timelineStartSeconds"] = start_sec
 
             # Save generated block in in-memory state store
             await state_store.save_block(block_id, block_meta)

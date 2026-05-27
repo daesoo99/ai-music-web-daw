@@ -1,5 +1,5 @@
 # Lobster AI DAW — 현재 상태
-**R-6-FIX / R-9** 종결 - AI 엔진 VRAM OOM 해소 및 페이로드 key_scale 필드 동기화 완료.
+**R-12-FIX** 종결 - 블록 시각 겹침 수정 완료 및 durationSeconds 22s/60s 불일치 ACE-Step 추론 지연(b타입) 판정으로 R-13 이관.
 
 사후 순서:
 - R-3 체크리스트 작성 + 사용자 실측
@@ -7,6 +7,28 @@
 
 ---
 
+**R-6-FIX / R-9** 종결 - AI 엔진 VRAM OOM 해소 및 페이로드 key_scale 필드 동기화 완료.
+
+
+
+사후 순서:
+
+- R-3 체크리스트 작성 + 사용자 실측
+
+- A-2 트랙 자동 배치 한국어 사전 보강
+
+
+
+---
+**R-12 진단·수정** — block_orchestrator latent chaining의 timelineStartSeconds 계산 + durationSeconds 불일치 확인 (Antigravity, 작업 프롬프트 다음 응답에 작성 예정)
+
+이후 순서:
+→ R-10 (ACESTEP_INIT_LLM 환경변수 비통작) — 우선순위 낮음, 본격 작업 사이 짬짬이
+→ A-2 트랙 자동 배치 한국어 사전 + payload에 트랙 정보 전달 (R-11 해결의 절반)
+→ A-4 Repaint UX 재설계 (R-1 흡수)
+→ D-1·D-2 옵션 E 통합 (R-7·R-11·R-13 본질 해결)
+
+
 
 | 항목 | 값 |
 |---|---|
@@ -52,12 +74,20 @@
 
 | 코드 | 항목 | 상태 |
 |---|---|---|
-| R-1 | Antigravity Task 2 "드래그 정상" 결론 | **무효** (A-4에 흡수 예정) |
-| R-2 | Playhead 마커 그랩 변경 이력 | **영구 보류** (추적 불가 확정) |
-| R-3 | v1 시기 완료 항목 + ReplaceConfirmModal vs SwapConfirmModal | **체크리스트 작성 대기** |
-| R-4 | 8일 미커밋 §5 룰 위반 | §5.4 방지책 추가됨. 향후 감시 |
-| R-5 | Antigravity AGENTS-MD-UPDATE 임의 무시 | 방지책 적용됨 |
-
+| R-1 | Repaint UX 작동 불가 | A-4에 흡수 예정 |
+| R-2 | Playhead 마커 변경 이력 | 영구 보류 (추적 불가) |
+| R-3 | v1 시기 자산 재검증 | **종결** (회귀 0건, 메타 정정 v3.0) |
+| R-3.S1 | ReplaceConfirmModal vs SwapConfirmModal | **종결** (둘 다 활성, 별개 목적) |
+| R-4 | 8일 미커밋 §5 룰 위반 | 방지책 §5.4 적용됨 |
+| R-5 | AGENTS-MD-UPDATE 임의 무시 | 방지책 적용됨 |
+| R-6 | OOM 음악 생성 실패 | **부분 종결** (OOM 해소, LM 비활성은 R-10) |
+| R-7 | 음악 퀄리티 저하 | 옵션 E 통합 의존 |
+| R-8 | F-2 보컬 봉인 실 상태 불일치 | **종결** (LM 비활성 의도 채택, 적용은 R-10) |
+| R-9 | keyscale → key_scale | **종결** (R-6-FIX 묶음 커밋 b6ee28e) |
+| R-10 | ACESTEP_INIT_LLM 환경변수 비통작 | 신규, 우선순위 낮음 |
+| R-11 | prompt 피아노 → 비피아노 출력 | 신규, 옵션 E·A-2 의존 |
+| R-12 | 블록 시각 겹침 (start_time 0) | **신규, 다음 Task** |
+| R-13 | ACE-Step 출력 앞뒤 무음 | 신규, 옵션 E 의존 |
 ---
 
 ## 4. git 상태

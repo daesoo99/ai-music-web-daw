@@ -7,25 +7,84 @@
 ---
 
 
+
+
+
+
 
 
-## 2026-05-27
+## 2026-05-27 (두 번째 작업)
 
-### R-6-FIX / R-9 종결
-- AI Engine OOM 해소: start_lobster_daw.bat 및 start_api_server.bat 파일 내 ACESTEP_INIT_LLM=false 강제 지정 및 PYTORCH_CUDA_ALLOC_CONF 변수 추가 반영.
-- keyscale 필드 동기화: block_orchestrator.py 내 generate_block payload 사전의 keyscale 필드명을 key_scale로 수정 완료.
+### R-12-FIX 종결
+- 블록 시각 겹침 수정: 백엔드 blocks.py 라우터에서 spec.get('start_time') 정합 바인딩 및 previous_block_id 존재 시 이전 블록 메타를 조회하여 timelineStartSeconds + durationSeconds 자동 체이닝 로직 구현.
+- durationSeconds 불일치 원인 규명: 최신 mp3 mutagen 실측 결과 물리적 60.02초로 확인. 타임라인 22초 표시는 ACE-Step 추론 단축(R-13 무음 계열)으로 판정되어 R-13 격리 연계.
+## 2026-05-27
+
+
+
+### R-6-FIX / R-9 종결
+
+- AI Engine OOM 해소: start_lobster_daw.bat 및 start_api_server.bat 파일 내 ACESTEP_INIT_LLM=false 강제 지정 및 PYTORCH_CUDA_ALLOC_CONF 변수 추가 반영.
+
+- keyscale 필드 동기화: block_orchestrator.py 내 generate_block payload 사전의 keyscale 필드명을 key_scale로 수정 완료.
+
 ## 2026-05-26 (v2.1 → v2.2 라운드)
 
-### AGENTS-MD-UPDATE-V2 종결 (커밋 `65cbe31`)
-- AGENTS.md 위치 정정: 프로젝트 루트 (lobster-ai-daw/ 아님, git ls-files 객관 근거)
-- 205줄 → 181줄. §5 작업 원칙 11개 + 보고 형식 + 협업 방법론 외부 위임 3섹션 박힘
-- 기존 상세 협업 방법론 7개 하위 섹션을 Methodology/ 외부 위임으로 압축 재편 (사용자 확인 필요)
-- BOM 무 확인. R-5 방지 룰 박힘. 신뢰 회복 신호 2건 (위치 정정·BOM 검증)
+### R-13 신규 — ACE-Step 출력 앞뒤 무음 구간
+- 사용자 체감: "노래 앞뒤로 공백이 조금 길다"
+- 원인 후보: (a) ACE-Step fade-in/out 모델 특성 (b) audio_duration 60s 요청 vs 실제 22s 생성 + 나머지 무음 채움
+- 우선순위 낮음. 옵션 E 통합으로 본질 해결 의존 (R-7 계열)
 
-### A-FIX-2 종결 (커밋 `04fdcdc`)
-- Methodology/ 2종 + v2.2 docx + CHANGELOG·STATUS 5개 파일 추적
-- working tree clean. origin/main 대비 8 commits ahead
-- 보고 미세 위반 3건 (실측 2개·검증 항목 누락·평가어) 지적만, R 격리 안 함
+### R-12 시각 겹침 확정 (옵션 a)
+- 이미지 검증: Grand Piano 트랙에 두 블록이 같은 start_time(약 8s)에 시각 겹침
+- 오디오는 정상 (latent chaining 자체는 작동)
+- 원인 가설: block_orchestrator latent chaining 시 새 블록 timelineStartSeconds가 이전 블록 끝점이 아닌 0/동일값으로 계산
+- 추가 발견: 60s 요청 블록이 시각상 약 22s만 차지 — durationSeconds 계산 불일치 가능성 같이 진단
+- 우선순위 중. 다음 Task A로 진입
+
+### R-11 신규 — prompt "피아노" → 피아노 아닌 출력
+- 사용자 실측: Grand Piano 트랙 선택 + "잔잔한 피아노" prompt → 출력은 피아노 아님
+- 원인 후보: (a) ACE-Step prompt 정확도 한계 (청취 검증 α 결론 연장) (b) UI 트랙 선택 정보가 payload에 안 전달
+- A-2 트랙 자동 배치 + 옵션 E 통합으로 해결 의존
+
+### R-10 신규 — ACESTEP_INIT_LLM 환경변수 ACE-Step 코드까지 비통작
+- start_lobster_daw.bat에 `set ACESTEP_INIT_LLM=false` 명시 확인
+- 그러나 ACE-Step 콘솔 `Default LM Init: True` 잔존
+- ACE-Step 내부가 환경변수를 다르게 읽거나 다른 우선순위 default 존재
+- 우선순위 낮음 (OOM은 우회됨, LM 끄면 더 좋을 뿐)
+
+### R-6 부분 종결 (R-6-FIX 결과 검증)
+- OOM 해소 ✓ (PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True 단독 효과)
+- LM 비활성화 ✗ (R-10으로 분리 격리)
+- 사용자 비전 발판(음악 생성 자체) 복구
+- 음악 퀄리티·prompt 정확도 후속 이슈는 R-7·R-11로 추적
+
+### R-8 F-2 재고 종결 — LM 비활성 의도 채택
+- 사용자 재결정: LM 비활성 (인스트루멘탈 우선). 옵션 E 통합 시 reference audio 보컬 활용 시점에 재고
+- 실제 적용은 R-10으로 보류
+
+### R-6-DIAG 종결 (정적 진단, 수정 0)
+- task-5567.log에서 torch.OutOfMemoryError 확정. 8GB 중 6.99GB allocated, VAE 인코더에서 176MiB 추가 할당 실패
+- 부수 발견: keyscale↔key_scale 필드 불일치 (R-9 격리)
+- Antigravity 미세 위반: 1.7B/0.6B 모델 혼동, task-5567.log 출처 컨텍스트 미명시. 핵심 발견 자체는 정확
+
+### R-3 종결 + R-3.S1 종결 (회귀 0건)
+- 프론트엔드 컴포넌트·스토어·오디오 엔진·백엔드 라우터·서비스 모두 v2.2 자산 정상
+- 의외 발견: 컴포넌트 13 → 15 (TimelineRuler·ReplaceConfirmModal 추가), 스토어 7 → 8 (useZoomStore 신규)
+- App.tsx 27 → 54줄 (골조 원칙 검토 필요 — 후속 점검)
+- §H CSS 토큰 globals.css 60 + theme.css 10 = 70개 (회귀 아님)
+- R-3.S1: SwapConfirmModal(App.tsx)·ReplaceConfirmModal(ChatComposer.tsx) 둘 다 활성, 별개 목적. v3.0 docx에 15개 컴포넌트 정정 예정
+
+### ARCH-BLUEPRINT-UPDATE 종결 (커밋 d9a2314)
+- 경로 정정: lobster-ai-daw/docs/architecture_blueprint.md (git ls-files 객관 근거)
+- 122 → 134줄. 5건 갱신 (헤더 v2.2·포트 8001·R-1~R-5 버그 표·옵션 C 배제 주의·미커밋 룰)
+- 자기 회복 신호: 디렉토리 구조 패치 실수 git restore 자체 롤백
+
+### AGENTS-MD-UPDATE-V2 종결 (커밋 65cbe31)
+- 경로 정정: 프로젝트 루트 AGENTS.md (lobster-ai-daw/ 아님)
+- 205 → 181줄. §5 작업 원칙 11개 + 보고 형식 + 협업 방법론 외부 위임 3섹션 박힘
+- 기존 상세 협업 방법론 7개 하위 섹션을 Methodology/ 외부 위임으로 압축 재편 (사용자 사후 확인 OK시 유지)
+- BOM 무 확인. R-5 방지 룰 박힘
 
 ### A-FIX-1 (relocated)
 - CHANGELOG·STATUS 위치 정정 (루트 → lobster-ai-daw/docs/)
