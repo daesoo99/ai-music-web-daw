@@ -38,7 +38,7 @@ echo.
 :: 3. Start ACE-Step v1.5 XL API Server
 echo [3/5] Starting ACE-Step v1.5 XL API Engine (Port 8001)...
 cd /d "c:\Users\kimdaesoo\.gemini\antigravity\music\ACE-Step-1.5"
-start /min "ACE-Step XL Writer API" cmd /c "set PYTHONUTF8=1&&set ACESTEP_CONFIG_PATH=acestep-v15-xl-base&&set ACESTEP_OFFLOAD_TO_CPU=true&&set ACESTEP_OFFLOAD_DIT_TO_CPU=true&&set ACESTEP_INIT_LLM=false&&set ACESTEP_QUANTIZE_DIT=int8_weight_only&&uv run --no-sync acestep-api --host 127.0.0.1 --port 8001"
+start /min "ACE-Step XL Writer API" cmd /c "set PYTHONUTF8=1&&set ACESTEP_CONFIG_PATH=acestep-v15-xl-base&&set ACESTEP_OFFLOAD_TO_CPU=true&&set ACESTEP_OFFLOAD_DIT_TO_CPU=true&&set ACESTEP_INIT_LLM=false&&set ACESTEP_QUANTIZE_DIT=int8_weight_only&&set PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True&&uv run --no-sync acestep-api --host 127.0.0.1 --port 8001"
 
 echo    - Waiting for ACE-Step API Server (Port 8001) to start up...
 echo      (This may take 1-2 minutes on Windows CPU-Offload mode as it loads large AI models...)

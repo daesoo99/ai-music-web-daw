@@ -7,11 +7,25 @@
 ---
 
 
-## 2026-05-26 (v2.1
+
+
+## 2026-05-27
+
+### R-6-FIX / R-9 종결
+- AI Engine OOM 해소: start_lobster_daw.bat 및 start_api_server.bat 파일 내 ACESTEP_INIT_LLM=false 강제 지정 및 PYTORCH_CUDA_ALLOC_CONF 변수 추가 반영.
+- keyscale 필드 동기화: block_orchestrator.py 내 generate_block payload 사전의 keyscale 필드명을 key_scale로 수정 완료.
+## 2026-05-26 (v2.1 → v2.2 라운드)
 
-### A-FIX-2 (relocated)
-- Methodology/ 협업 방법론 자산 정식 추적
-- 핸드오프 v2.2 docx 추적 → v2.2 라운드)
+### AGENTS-MD-UPDATE-V2 종결 (커밋 `65cbe31`)
+- AGENTS.md 위치 정정: 프로젝트 루트 (lobster-ai-daw/ 아님, git ls-files 객관 근거)
+- 205줄 → 181줄. §5 작업 원칙 11개 + 보고 형식 + 협업 방법론 외부 위임 3섹션 박힘
+- 기존 상세 협업 방법론 7개 하위 섹션을 Methodology/ 외부 위임으로 압축 재편 (사용자 확인 필요)
+- BOM 무 확인. R-5 방지 룰 박힘. 신뢰 회복 신호 2건 (위치 정정·BOM 검증)
+
+### A-FIX-2 종결 (커밋 `04fdcdc`)
+- Methodology/ 2종 + v2.2 docx + CHANGELOG·STATUS 5개 파일 추적
+- working tree clean. origin/main 대비 8 commits ahead
+- 보고 미세 위반 3건 (실측 2개·검증 항목 누락·평가어) 지적만, R 격리 안 함
 
 ### A-FIX-1 (relocated)
 - CHANGELOG·STATUS 위치 정정 (루트 → lobster-ai-daw/docs/)

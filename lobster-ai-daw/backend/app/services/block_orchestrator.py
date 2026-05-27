@@ -284,7 +284,7 @@ class BlockOrchestrator:
             "prompt": prompt,
             "lyrics": "[Instrumental]",
             "bpm": bpm,
-            "keyscale": keyscale,
+            "key_scale": keyscale,
             "audio_format": "mp3",
             "thinking": False,
             "batch_size": 1,

@@ -1,20 +1,29 @@
 # Lobster AI DAW — 현재 상태
+**R-6-FIX / R-9** 종결 - AI 엔진 VRAM OOM 해소 및 페이로드 key_scale 필드 동기화 완료.
+
+사후 순서:
+- R-3 체크리스트 작성 + 사용자 실측
+- A-2 트랙 자동 배치 한국어 사전 보강
+
+---
+
 
 | 항목 | 값 |
 |---|---|
-| 마지막 갱신 | 2026-05-26 (A-FIX-2 종결 후) |
+**ARCH-BLUEPRINT-UPDATE** — architecture_blueprint.md v2.2 정합화 (Antigravity, 작업 프롬프트 작성됨)
+
+이후 순서:
+→ R-3 체크리스트 작성 + 사용자 실측
+→ A-2 트랙 자동 배치 한국어 사전 (본격 비전 작업 시작)
 | 마지막 docx | v2.2 (2026-05-26) |
 | 누적 변경 로그 | CHANGELOG.md 참조 |
 | 협업 방법론 | 직렬_단일_Task_협업_방법론.docx |
 
 ---
 
-## 1. 지금 다음 Task
-
-**A-FIX-2** — Methodology + v2.2 docx 정식 추적 (Antigravity, 작업 프롬프트 작성됨)
+**AGENTS-MD-UPDATE-V2** — R-5 방지 룰 박은 재실행 버전 (Antigravity, 작업 프롬프트 작성됨)
 
 이후 순서:
-→ AGENTS-MD-UPDATE 재실행 (R-5 방지 룰 박은 버전)
 → ARCH-BLUEPRINT-UPDATE
 → R-3 체크리스트 작성 + 사용자 실측
 → A-2 트랙 자동 배치 한국어 사전 (본격 비전 작업 시작)
@@ -78,7 +87,8 @@ a53f38e chore: ignore .bak backups and runtime logs (A-3c)
 |---|---|---|---|
 | 1 | git 위생 정리 5단계 (A-3·A-3b·A-3c·A-3d·A-3e) | 완료 | ✓ |
 | 2 | v2.2 핸드오프 갱신 + CHANGELOG·STATUS 도입 | 완료 | ✓ |
-| 3 | (선택) AGENTS-MD-UPDATE | 0.5h | 사용자 결정 |
+| 3 | AGENTS-MD-UPDATE-V2 (R-5 방지 룰 박은 재실행) | 0.5h | **완료** |
+| 3.5 | ARCH-BLUEPRINT-UPDATE (v2.0 → v2.2 정합화) | 0.5h | **다음** |
 | 4 | R-3 체크리스트 작성 + 사용자 실측 | 30분 | 대기 |
 | 5 | **A-2 트랙 자동 배치 한국어 사전** | 1~2h | **다음** |
 | 6 | A-4 Repaint UX 재설계 (R-1 흡수) | 3~5h | 대기 |
