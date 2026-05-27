@@ -14,6 +14,14 @@ from app.services.midi_synth import render_midi_to_wav
 from app.utils.audio_utils import extract_audio_tail
 
 
+TRACK_INSTRUMENT_PROMPT = {
+    "piano": "Solo grand piano",
+    "strings": "Lush string ensemble, orchestral strings",
+    "drums": "Acoustic drum kit",
+    "bass": "Electric bass guitar",
+    "guitar": "Acoustic guitar",
+}
+
 class BlockOrchestrator:
     """Orchestrates block-to-block AI music composition, handling continuation tails,
     sequential chain generation, and defensive fallbacks.
@@ -280,8 +288,10 @@ class BlockOrchestrator:
         dest_path = self._get_block_path(project_id, block_id)
         os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
+        instrument_kw = TRACK_INSTRUMENT_PROMPT.get(track_id, "")
+        final_prompt = f"{instrument_kw}. {prompt}" if instrument_kw else prompt
         payload = {
-            "prompt": prompt,
+            "prompt": final_prompt,
             "lyrics": "[Instrumental]",
             "bpm": bpm,
             "key_scale": keyscale,
